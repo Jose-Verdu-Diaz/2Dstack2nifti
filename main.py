@@ -105,7 +105,7 @@ def transform_data(stacked):
 
 
 def save_nifti(input_dir, transformed):
-    s = 0.1
+    s = config['voxel_mult']
     aff = np.array([
         [s,0,0,0],
         [0,s,0,0],
@@ -123,9 +123,24 @@ def main():
     input_dir = select_input()
     files = read_data(input_dir)
     stacked = load_data(files)
-    coronal = create_coronal(stacked)
-    display_image(coronal)
+
+    while True:
+        coronal = create_coronal(stacked)
+        print(f'{clr.CYAN}Displaying coronal image, close window to continue...{clr.ENDC}')
+        display_image(coronal)
+        print(f'{clr.CYAN}Current voxel multiplier: {config["voxel_mult"]}{clr.ENDC}')
+        vm = input(f'{clr.PURPLE}Enter a new voxel multiplier or press Enter to continue:{clr.ENDC}')
+        if vm:
+            try:
+                vm = float(vm)
+            except ValueError:
+                print(f'{clr.RED}{vm} is not a number{clr.ENDC}')
+                assert 0 < vm <= 1, 'Voxel multiplier must be between 0 and 1'
+            update_config({'voxel_mult': vm})
+        else: break
+
     img_cont = auto_contrast(stacked)
+
     transformed = transform_data(img_cont)
     save_nifti(input_dir, transformed)
 

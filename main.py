@@ -32,7 +32,7 @@ def create_coronal(img):
     print(n)
     print(img.shape[2])
     for i in range(img.shape[2]):
-        for j in range(n): rows.insert(0, img[:, middle, i])
+        for j in range(n): rows.insert(0, img[middle, :, i])
     img_new = np.array(rows)
     return img_new
 

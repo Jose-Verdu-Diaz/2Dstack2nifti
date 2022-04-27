@@ -1,18 +1,40 @@
 import os
 import json
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageTk
 import tkinter as tk
 import nibabel as nib
 from tkinter import filedialog
 
 config = {
-    'default_input_dir': '.'
+    'default_input_dir': '.',
+    'voxel_mult': 0.2
     }
 
 def update_config(new_config):
     for k in new_config: config[k] = new_config[k]
     with open('config.json', 'w') as f: json.dump(config, f)
+
+
+def display_image(img):
+    root = tk.Tk()
+    img = ImageTk.PhotoImage(image=Image.fromarray(img))
+    tk.Label(
+        root,
+        image=img
+    ).pack()
+    root.mainloop()
+
+def create_coronal(img):
+    rows = []
+    middle = int(img.shape[1] / 2)
+    n = int(1 / config['voxel_mult'])
+    print(n)
+    print(img.shape[2])
+    for i in range(img.shape[2]):
+        for j in range(n): rows.insert(0, img[:, middle, i])
+    img_new = np.array(rows)
+    return img_new
 
 
 def select_input():
@@ -86,6 +108,8 @@ def main():
     input_dir = select_input()
     files = read_data(input_dir)
     stacked = load_data(files)
+    coronal = create_coronal(stacked)
+    display_image(coronal)
     img_cont = auto_contrast(stacked)
     transformed = transform_data(img_cont)
     save_nifti(input_dir, transformed)

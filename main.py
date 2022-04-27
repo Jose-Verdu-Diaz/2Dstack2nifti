@@ -1,17 +1,28 @@
 import os
+import json
 import numpy as np
-import tkinter as tk
-from tkinter import filedialog
 from PIL import Image
+import tkinter as tk
 import nibabel as nib
+from tkinter import filedialog
+
+config = {
+    'default_input_dir': '.'
+    }
+
+def update_config(new_config):
+    for k in new_config: config[k] = new_config[k]
+    with open('config.json', 'w') as f: json.dump(config, f)
 
 
 def select_input():
     root = tk.Tk()
-    input_dir = filedialog.askdirectory(title='Select an input directory')
+    input_dir = filedialog.askdirectory(title='Select an input directory', initialdir=config['default_input_dir'])
     root.destroy()
     assert os.path.isdir(input_dir), f'{input_dir} is not a directory'
     print (f'Input Dir: {input_dir}')
+
+    update_config({'default_input_dir': os.path.split(input_dir)[0]})
 
     return input_dir
 
@@ -37,10 +48,24 @@ def load_data(files):
     return stacked
 
 
+def auto_contrast(img):
+    print(f'Min/Max values before auto contrast: {img.min()}/{img.max()}')
+    img = img / 255
+    update_contrast = lambda x, a, b: (x - a) / (b - a)
+    img_cont = update_contrast(img, img.min(), img.max())
+    img_cont = np.where(img_cont > 0, img_cont, 0)
+    img_cont = np.where(img_cont < 1, img_cont, 1)
+    img_cont = np.array(img_cont * 255, dtype=np.uint8)
+    print(f'Min/Max values after auto contrast:  {img_cont.min()}/{img_cont.max()}')
+
+    return img_cont
+
+
 def transform_data(stacked):
     transformed = np.moveaxis(stacked, 0, 1)
     transformed = np.flip(transformed, 1)
     print(f'Transformed shape: {transformed.shape}')
+    return transformed
 
 
 def save_nifti(input_dir, transformed):
@@ -58,14 +83,16 @@ def save_nifti(input_dir, transformed):
 
 
 def main():
-    if not os.path.isdir('output'): os.makedirs('output')
-
     input_dir = select_input()
     files = read_data(input_dir)
     stacked = load_data(files)
-    transformed = transform_data(stacked)
+    img_cont = auto_contrast(stacked)
+    transformed = transform_data(img_cont)
     save_nifti(input_dir, transformed)
 
 
 if __name__ == '__main__':
+    if not os.path.isdir('output'): os.makedirs('output')
+    if not os.path.isfile('config.json'): update_config({})
+    with open('config.json', 'r') as f: config = json.load(f)
     main()

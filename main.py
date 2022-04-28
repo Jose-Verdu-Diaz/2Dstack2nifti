@@ -78,12 +78,13 @@ def transform_data(stacked):
     return transformed
 
 
-def save_nifti(input_dir, transformed):
-    s = config['voxel_mult']
+def save_nifti(input_dir, transformed, flip=False):
+    m = config['voxel_mult']
+    f = -1 if flip else 1
     aff = np.array([
-        [s,0,0,0],
-        [0,s,0,0],
-        [0,0,1,0],
+        [m,0,0,0],
+        [0,m,0,0],
+        [0,0,f,0],
         [0,0,0,1],
     ])
     output_name = f'{input_dir.split("/")[-1]}.nii.gz'
@@ -94,7 +95,7 @@ def save_nifti(input_dir, transformed):
 
 def main():
 
-    if input_number('Enter 0 to load a folder or 1 to load files', [0,1], 'int'):
+    if input_number(f'{clr.PURPLE}Enter 0 to load a folder or 1 to load files', [0,1], 'int'):
         input_dir, files = select_input_files()
     else:
         print(f'{clr.CYAN}Opening folder dialog, please choose an input folder...{clr.ENDC}')
@@ -121,7 +122,8 @@ def main():
     img_cont = auto_contrast(stacked)
     transformed = transform_data(img_cont)
     
-    save_nifti(input_dir, transformed)
+    flip = input_yes_no(f'{clr.PURPLE}Flip Coronal and Saggital?')
+    save_nifti(input_dir, transformed, flip=flip)
 
 
 if __name__ == '__main__':
